@@ -20,7 +20,7 @@ let ready = false, busy = false;
 let file = null;          // { name, bytes }
 let scan = null;          // preview from the worker
 let result = null;
-const worker = new Worker('worker.js');
+const worker = new Worker('worker.js?v=2');
 
 const plotMain = new Plot($('#cvMain'), { logY: true, xlabel: '2θ (deg)', ylabel: 'intensity (cps)' });
 const plotResid = new Plot($('#cvResid'), { xlabel: '2θ (deg)', ylabel: 'resid / σ', yZeroLine: true, legend: false });
