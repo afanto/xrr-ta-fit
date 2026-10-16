@@ -122,12 +122,12 @@ function sig(v, n) { return Number(v).toPrecision(n); }
 
 function renderResult() {
   const r = result, ta = r.ta;
-  const err = (ta.err_A != null && ta.err_A > 0) ? ` ± ${sig(ta.err_A, 2)}` : '';
-  $('#rThick').textContent = `${ta.thickness_A.toFixed(1)}${err} Å`;
-  $('#rThickNm').textContent = `${(ta.thickness_A / 10).toFixed(2)} nm`;
-  $('#rRate').textContent = `${ta.rate_A_s.toFixed(4)} Å/s`;
-  $('#rRateW').textContent = `${sig(ta.rate_A_s_W, 4)} Å/s/W`;
-  $('#rChi').textContent = `χ²red ${r.chi2red.toFixed(2)}`;
+  const err = (ta.err_A != null && ta.err_A > 0) ? ` ± ${sig(ta.err_A, 3)}` : '';
+  $('#rThick').textContent = `${ta.thickness_A.toFixed(2)}${err} Å`;
+  $('#rThickNm').textContent = `${(ta.thickness_A / 10).toFixed(3)} nm`;
+  $('#rRate').textContent = `${ta.rate_A_s.toFixed(6)} Å/s`;
+  $('#rRateW').textContent = `${sig(ta.rate_A_s_W, 6)} Å/s/W`;
+  $('#rChi').textContent = `χ²red ${r.chi2red.toFixed(3)}`;
   $('#rRange').textContent = `fitted ${r.fit_range[0].toFixed(2)}–${r.fit_range[1].toFixed(2)}°`;
   const notes = [];
   if (r.chi2red > 10) notes.push(['warn', `The fit is poor (χ²red ${r.chi2red.toFixed(1)}). Check this is the right scan and that the power and time are correct before trusting the thickness.`]);
