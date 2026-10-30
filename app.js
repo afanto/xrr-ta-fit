@@ -20,14 +20,19 @@ let ready = false, busy = false;
 let file = null;          // { name, bytes }
 let scan = null;          // preview from the worker
 let result = null;
-const worker = new Worker('worker.js?v=2');
+const worker = new Worker('worker.js?v=3');
 
 const plotMain = new Plot($('#cvMain'), { logY: true, xlabel: '2θ (deg)', ylabel: 'intensity (cps)' });
 const plotResid = new Plot($('#cvResid'), { xlabel: '2θ (deg)', ylabel: 'resid / σ', yZeroLine: true, legend: false });
 
 function redraw() {
   if (!scan) { plotMain.setSeries([]); return; }
-  const s = [{ x: scan.two_theta, y: scan.cps, color: cssvar('--data'), style: 'dots', radius: 1.3, label: 'data' }];
+  const s = [];
+  const r = fitRange();
+  const shade = 'color-mix(in srgb, ' + cssvar('--muted') + ' 22%, transparent)';
+  if (isFinite(r.tmin) && r.tmin > scan.range[0]) s.push({ style: 'span', x0: scan.range[0], x1: r.tmin, color: shade });
+  if (isFinite(r.tmax) && r.tmax < scan.range[1]) s.push({ style: 'span', x0: r.tmax, x1: scan.range[1], color: shade, label: 'excluded' });
+  s.push({ x: scan.two_theta, y: scan.cps, color: cssvar('--data'), style: 'dots', radius: 1.3, label: 'data' });
   if (result) {
     s.push({ x: result.curves.two_theta, y: result.curves.fit, color: cssvar('--fit'), width: 1.7, label: 'fit' });
     plotResid.setSeries([{ x: result.curves.two_theta, y: result.curves.residual, color: cssvar('--accent'), width: 1 }]);
@@ -47,8 +52,22 @@ function inputs() {
   const p = parseFloat($('#power').value), t = parseFloat($('#time').value);
   return { power: p, time: t, ok: p > 0 && t > 0 && isFinite(p) && isFinite(t) };
 }
+function fitRange() {
+  const tmin = parseFloat($('#tmin').value), tmax = parseFloat($('#tmax').value);
+  let problem = '';
+  if (!isFinite(tmin) || !isFinite(tmax)) problem = 'Enter a start and an end angle.';
+  else if (tmax - tmin < 0.5) problem = 'The range needs to span at least 0.5°.';
+  else if (scan && (tmax <= scan.range[0] || tmin >= scan.range[1])) problem = `The range is outside the scan (${scan.range[0].toFixed(2)}–${scan.range[1].toFixed(2)}°).`;
+  return { tmin, tmax, ok: !problem, problem };
+}
 function refresh() {
-  $('#run').disabled = !(ready && !busy && scan && inputs().ok);
+  const r = fitRange();
+  const hint = $('#rangeHint');
+  hint.classList.toggle('warn', !!scan && !r.ok);
+  if (scan) hint.textContent = r.ok
+    ? `The scan covers ${scan.range[0].toFixed(2)}–${scan.range[1].toFixed(2)}°. The end starts at ${scan.tmax.toFixed(2)}°, where the fringes sink into the noise.`
+    : r.problem;
+  $('#run').disabled = !(ready && !busy && scan && inputs().ok && r.ok);
 }
 function clearResult() {
   result = null;
@@ -69,6 +88,8 @@ worker.onmessage = (e) => {
     if (file) worker.postMessage({ type: 'preview', filename: file.name, bytes: file.bytes.slice() });
   } else if (m.type === 'preview') {
     scan = m.data;
+    $('#tmin').value = Math.max(scan.range[0], 0.3).toFixed(2);
+    $('#tmax').value = Math.min(scan.tmax, scan.range[1]).toFixed(2);
     $('#empty').hidden = true;
     showError('');
     redraw();
@@ -95,6 +116,7 @@ async function takeFile(f) {
   if (f.size > 20 * 1024 * 1024) { showError('That file is over 20 MB; is it the right one?'); return; }
   showError('');
   scan = null;
+  $('#tmin').value = ''; $('#tmax').value = '';
   clearResult();
   file = { name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) };
   $('#dropText').textContent = f.name;
@@ -108,14 +130,15 @@ const drop = $('#drop');
 ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', (e) => takeFile(e.dataTransfer.files[0]));
-['#power', '#time'].forEach((s) => $(s).addEventListener('input', () => { clearResult(); refresh(); }));
+['#power', '#time', '#tmin', '#tmax'].forEach((s) => $(s).addEventListener('input', () => { clearResult(); refresh(); }));
 
 // ---------------------------------------------------------------- fit
 $('#run').onclick = () => {
   const { power, time } = inputs();
+  const { tmin, tmax } = fitRange();
   busy = true; refresh(); showError(''); clearResult();
   showProgress('starting', 0.02);
-  worker.postMessage({ type: 'fit', filename: file.name, bytes: file.bytes.slice(), power, time });
+  worker.postMessage({ type: 'fit', filename: file.name, bytes: file.bytes.slice(), power, time, tmin, tmax });
 };
 
 function sig(v, n) { return Number(v).toPrecision(n); }

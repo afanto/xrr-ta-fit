@@ -49,9 +49,11 @@ onmessage = async (e) => {
       py.globals.set('fname', m.filename);
       py.globals.set('power', m.power);
       py.globals.set('secs', m.time);
+      py.globals.set('tlo', m.tmin);
+      py.globals.set('thi', m.tmax);
       py.globals.set('post', (text, frac) => say('progress', { text, frac }));
       const out = await py.runPythonAsync(
-        "ta_entry.run(fname, '/tmp/scan.dat', float(power), float(secs), post)");
+        "ta_entry.run(fname, '/tmp/scan.dat', float(power), float(secs), float(tlo), float(thi), post)");
       say('result', { data: JSON.parse(out) });
     }
   } catch (err) {

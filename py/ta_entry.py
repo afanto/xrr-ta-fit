@@ -8,7 +8,7 @@ from xrrfit.loader import load
 from xrrfit.quality import suggest_tmax
 from xrrfit import fit as F
 
-RU_THICKNESS_A = 21.4          # cap and seed, 100 W for 30 s, locked
+RU_THICKNESS_A = 18.72         # cap and seed, locked
 MAX_POINTS = 1600
 
 
@@ -43,20 +43,21 @@ def preview(filename, path):
         two_theta=_thin(data['two_theta']), cps=_thin(data['cps']))))
 
 
-def run(filename, path, power_w, time_s, post):
+def run(filename, path, power_w, time_s, tmin, tmax, post):
     with open(path, 'rb') as fh:
         data = load(filename, fh.read())
-    try:
-        cut, _ = suggest_tmax(data['two_theta'], data['cps'], data['counts'],
-                              data['attn'])
-    except Exception:                                  # noqa: BLE001
-        cut = data['range'][1]
+    lo = max(float(tmin), data['range'][0])
+    hi = min(float(tmax), data['range'][1])
+    if hi - lo < 0.5:
+        raise ValueError('The fit range is too short: it needs to span at '
+                         'least 0.5 degrees inside the scan '
+                         f"({data['range'][0]:.2f} to {data['range'][1]:.2f}).")
     ru = dict(material='Ru', thickness=RU_THICKNESS_A, fix_thickness=True,
-              power_W=100.0, time_s=30.0)
+              power_W=100.0, time_s=26.0)
     spec = dict(
         layers=[dict(ru), dict(material='Ta', power_W=power_w, time_s=time_s),
                 dict(ru)],
-        substrate='borofloat', tmin=max(data['range'][0], 0.3), tmax=cut,
+        substrate='borofloat', tmin=lo, tmax=hi,
         sample_mm=25.0, sys_err=0.02, fit_density=False,
         fit_substrate_density=False, link_densities=True)
 

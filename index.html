@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ta thickness fit</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <header>
@@ -26,15 +26,24 @@
     <div class="panel">
       <div class="steprow"><span class="step">2</span><h2>Ta deposition</h2></div>
       <div class="grid2">
-        <label>Power (W)<input id="power" type="number" min="1" max="500" step="any" inputmode="decimal" placeholder="e.g. 150"></label>
-        <label>Time (s)<input id="time" type="number" min="1" max="100000" step="any" inputmode="decimal" placeholder="e.g. 310"></label>
+        <label>Power (W)<input id="power" type="number" min="1" max="500" step="any" inputmode="decimal" placeholder="e.g. 80"></label>
+        <label>Time (s)<input id="time" type="number" min="1" max="100000" step="any" inputmode="decimal" placeholder="e.g. 600"></label>
       </div>
       <div class="stack" aria-label="Layer stack">
-        <div class="lay cap"><b>Ru</b> cap <i>21.4 Å, locked</i></div>
+        <div class="lay cap"><b>Ru</b> cap <i>18.72 Å, locked</i></div>
         <div class="lay ta"><b>Ta</b> <i>fitted</i></div>
-        <div class="lay cap"><b>Ru</b> seed <i>21.4 Å, locked</i></div>
+        <div class="lay cap"><b>Ru</b> seed <i>18.72 Å, locked</i></div>
         <div class="lay sub">glass substrate</div>
       </div>
+    </div>
+
+    <div class="panel">
+      <div class="steprow"><span class="step">3</span><h2>Fit range</h2></div>
+      <div class="grid2">
+        <label>Start 2θ (°)<input id="tmin" type="number" step="0.01" inputmode="decimal" placeholder="start"></label>
+        <label>End 2θ (°)<input id="tmax" type="number" step="0.01" inputmode="decimal" placeholder="end"></label>
+      </div>
+      <p class="hint" id="rangeHint">Set when you load a scan. The end is trimmed to where the fringes sink into the noise; change either value to fit a different part.</p>
     </div>
 
     <button id="run" class="primary" disabled>Fit</button>
@@ -65,7 +74,7 @@
   </section>
 </main>
 
-<script src="plot.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="plot.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
