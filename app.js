@@ -20,7 +20,7 @@ let ready = false, busy = false;
 let file = null;          // { name, bytes }
 let scan = null;          // preview from the worker
 let result = null;
-const worker = new Worker('worker.js?v=3');
+const worker = new Worker('worker.js?v=4');
 
 const plotMain = new Plot($('#cvMain'), { logY: true, xlabel: '2θ (deg)', ylabel: 'intensity (cps)' });
 const plotResid = new Plot($('#cvResid'), { xlabel: '2θ (deg)', ylabel: 'resid / σ', yZeroLine: true, legend: false });
@@ -65,7 +65,7 @@ function refresh() {
   const hint = $('#rangeHint');
   hint.classList.toggle('warn', !!scan && !r.ok);
   if (scan) hint.textContent = r.ok
-    ? `The scan covers ${scan.range[0].toFixed(2)}–${scan.range[1].toFixed(2)}°. The end starts at ${scan.tmax.toFixed(2)}°, where the fringes sink into the noise.`
+    ? `The scan covers ${scan.range[0].toFixed(2)}–${scan.range[1].toFixed(2)}°. The fit range starts at 1.5–4.2°; change either value to fit a different part.`
     : r.problem;
   $('#run').disabled = !(ready && !busy && scan && inputs().ok && r.ok);
 }
@@ -88,8 +88,8 @@ worker.onmessage = (e) => {
     if (file) worker.postMessage({ type: 'preview', filename: file.name, bytes: file.bytes.slice() });
   } else if (m.type === 'preview') {
     scan = m.data;
-    $('#tmin').value = Math.max(scan.range[0], 0.3).toFixed(2);
-    $('#tmax').value = Math.min(scan.tmax, scan.range[1]).toFixed(2);
+    $('#tmin').value = Math.max(1.5, scan.range[0]).toFixed(2);
+    $('#tmax').value = Math.min(4.2, scan.range[1]).toFixed(2);
     $('#empty').hidden = true;
     showError('');
     redraw();
@@ -145,12 +145,12 @@ function sig(v, n) { return Number(v).toPrecision(n); }
 
 function renderResult() {
   const r = result, ta = r.ta;
-  const err = (ta.err_A != null && ta.err_A > 0) ? ` ± ${sig(ta.err_A, 3)}` : '';
+  const err = (ta.err_A != null && ta.err_A > 0) ? ` ± ${ta.err_A.toFixed(2)}` : '';
   $('#rThick').textContent = `${ta.thickness_A.toFixed(2)}${err} Å`;
   $('#rThickNm').textContent = `${(ta.thickness_A / 10).toFixed(3)} nm`;
-  $('#rRate').textContent = `${ta.rate_A_s.toFixed(6)} Å/s`;
-  $('#rRateW').textContent = `${sig(ta.rate_A_s_W, 6)} Å/s/W`;
-  $('#rChi').textContent = `χ²red ${r.chi2red.toFixed(3)}`;
+  $('#rRate').textContent = ta.rate_A_s.toFixed(6);
+  $('#rRateW').textContent = sig(ta.rate_A_s_W, 6);
+  $('#rChi').textContent = `χ²red ${r.chi2red.toFixed(2)}`;
   $('#rRange').textContent = `fitted ${r.fit_range[0].toFixed(2)}–${r.fit_range[1].toFixed(2)}°`;
   const notes = [];
   if (r.chi2red > 10) notes.push(['warn', `The fit is poor (χ²red ${r.chi2red.toFixed(1)}). Check this is the right scan and that the power and time are correct before trusting the thickness.`]);
